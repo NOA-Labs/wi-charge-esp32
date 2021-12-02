@@ -3,6 +3,7 @@ project description：
 		ESP32 Boards： AI Thinker ESP32-CAM.  
 		
 Command line descriptions:  
+
 		1, input "help" through the serial port assistant, application will printf string following string :  
 			help:          Lists all the registered commands.  
 			reboot                       : reboot device.  
@@ -17,9 +18,13 @@ Command line descriptions:
 			download=url                 : url:download path.  
 			download test=url            : url:download path.  
 			peripheral test=x            : x=SD: sd test.  
+			
+			
 		2, connect ap:  
 			example: connect ap=NOARDTest=12345678  
-		3, test downlod function:
+			
+			
+		3, test downlod function:  
 			ex. download test=https://blob.wi-whisper.com/videos/video0_480_272.avi
 			
 
