@@ -261,6 +261,7 @@ static int esp32_download_test( char *pcWriteBuffer, size_t xWriteBufferLen, con
     parameter = FreeRTOS_CLIGetParameter(pcCommandString, 1, &pxParameterStringLength);
     String url = String(parameter);
     AzureStorageBlobs_p.downloadTest(url);
+    return pdFALSE;
 }
 /**
  * @brief 
@@ -547,8 +548,16 @@ static void serial2_task_entry(void *param)
     Serial.println("Serial2 task run.\r\n");
 
     while(1){
+    #if (CLI_GET_COMMAND_USING_POLLING_MODE)
+         rev_byte = Serial2.read();
+         if(rev_byte == -1){
+             delay(100);
+             continue;
+         }
+    #else
         rev_byte = (char)Serial2.read(portMAX_DELAY);
-        
+    #endif
+
         receive_buff[rev_index] = rev_byte;
         if(receive_buff[rev_index] == '\n' && receive_buff[rev_index - 1] == '\r'){
           receive_buff[rev_index - 1] = 0;

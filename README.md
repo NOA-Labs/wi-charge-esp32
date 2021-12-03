@@ -25,7 +25,12 @@ Command line descriptions:
 			
 			
 		3, test downlod function:  
-			ex. download test=https://blob.wi-whisper.com/videos/video0_480_272.avi
+			ex. download test=https://blob.wi-whisper.com/videos/video0_480_272.avi  
+
+**********************************************************************************************************************  
+2021-12-3:  
+    1, modify FreeRTOS CLI Serial port receive mode , use polling mode。  
+
 			
 
 	

@@ -222,7 +222,7 @@ bool  AzrureStorageBlobs::checkUrlIsValid(String &url)
     return true;
 }
 
-uint8_t download_buff[40 * 1024] = {0};
+uint8_t download_buff[32*1024] = {0};
 bool AzrureStorageBlobs::downloadFile(String& url)
 {
     HTTPClient http;
