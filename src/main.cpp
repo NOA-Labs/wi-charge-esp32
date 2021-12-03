@@ -339,8 +339,8 @@ static void uart_command_handle(void *commandInput)
  * */
 static void cli_task_entry( void * param)
 {
-    char rev_byte;
-    char receive_buff[257] = {0};
+    int rev_byte;
+    char receive_buff[256] = {0};
     uint16_t rev_index = 0;
 
     for(int i = 0; i < MAX_CLI_COUNT; i++){
@@ -348,9 +348,16 @@ static void cli_task_entry( void * param)
     }
 
     while(1){      
-        rev_byte = (char)Serial.read(portMAX_DELAY);
-
-        receive_buff[rev_index] = rev_byte;
+#if (SERIAL_RECEIVE_USING_POLLING_MODE)
+         rev_byte = Serial.read();
+         if(rev_byte == -1){
+             delay(100);
+             continue;
+         }
+#else
+        rev_byte = Serial.read(portMAX_DELAY);
+#endif
+        receive_buff[rev_index] = (char)rev_byte;
         if(receive_buff[rev_index] == '\n' && receive_buff[rev_index - 1] == '\r'){
           receive_buff[rev_index - 1] = 0;
           uart_command_handle(receive_buff);  
@@ -548,17 +555,17 @@ static void serial2_task_entry(void *param)
     Serial.println("Serial2 task run.\r\n");
 
     while(1){
-    #if (CLI_GET_COMMAND_USING_POLLING_MODE)
+    #if (SERIAL_RECEIVE_USING_POLLING_MODE)
          rev_byte = Serial2.read();
          if(rev_byte == -1){
              delay(100);
              continue;
          }
     #else
-        rev_byte = (char)Serial2.read(portMAX_DELAY);
+        rev_byte = Serial2.read(portMAX_DELAY);
     #endif
 
-        receive_buff[rev_index] = rev_byte;
+        receive_buff[rev_index] = (char)rev_byte;
         if(receive_buff[rev_index] == '\n' && receive_buff[rev_index - 1] == '\r'){
           receive_buff[rev_index - 1] = 0;
           uart_command_handle(receive_buff);  

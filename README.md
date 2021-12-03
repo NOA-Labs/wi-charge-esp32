@@ -29,7 +29,7 @@ Command line descriptions:
 
 **********************************************************************************************************************  
 2021-12-3:  
-    1, modify FreeRTOS CLI Serial port receive mode , use polling mode。  
+     1, modify FreeRTOS CLI Serial port receive mode , use polling mode。  
 
 			
 
