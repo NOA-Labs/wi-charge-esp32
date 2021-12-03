@@ -5,6 +5,7 @@
 
 #include "pins_arduino.h"
 #include "HardwareSerial.h"
+#include "esp32-hal-uart.h"
 
 #ifndef RX1
 #define RX1 9
@@ -138,7 +139,8 @@ int HardwareSerial::read(void)
 
 int HardwareSerial::read(uint32_t wait_timeout)
 {
-    return uartRead_delay(_uart, wait_timeout);
+    // return uartRead_delay(_uart, wait_timeout);
+    return 0;
 }
 
 // read characters into buffer

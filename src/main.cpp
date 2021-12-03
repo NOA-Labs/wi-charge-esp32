@@ -90,8 +90,8 @@ static int esp32_ping_mcu( char *pcWriteBuffer, size_t xWriteBufferLen, const ch
 
 static int esp32_get_info( char *pcWriteBuffer, size_t xWriteBufferLen, const char *pcCommandString )
 {
-    sprintf(pcWriteBuffer, "CPU Frequency: %d.\r\nXtal Frequency: %d.\r\nAPB Frequency: %d.\r\n",
-    ESP.getCpuFreqMHz(), ESP.getXtalFreqMhz(), ESP.getApbFreq());
+    sprintf(pcWriteBuffer, "CPU Frequency: %d.\r\n",
+    ESP.getCpuFreqMHz());
     return pdFALSE;
 }
 
@@ -106,7 +106,7 @@ static int esp32_set_cpu_furequency( char *pcWriteBuffer, size_t xWriteBufferLen
     if(parameter == NULL)return pdFALSE;
 
     int freq = atoi(parameter);
-    ESP.setCpuFreqMhz(freq);
+    // ESP.setCpuFreqMhz(freq);
 
     return pdFALSE;
 }
