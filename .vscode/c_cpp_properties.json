@@ -8,8 +8,8 @@
         {
             "name": "PlatformIO",
             "includePath": [
-                "D:/wi-charge/Arduino-ESP32/Wi-charge/include",
-                "D:/wi-charge/Arduino-ESP32/Wi-charge/src",
+                "d:/wi-charge/Arduino-ESP32/Wi-charge/include",
+                "d:/wi-charge/Arduino-ESP32/Wi-charge/src",
                 "C:/Users/VernonZhang/.platformio/packages/framework-arduinoespressif32/libraries/Wire/src",
                 "C:/Users/VernonZhang/.platformio/packages/framework-arduinoespressif32/libraries/SD_MMC/src",
                 "C:/Users/VernonZhang/.platformio/packages/framework-arduinoespressif32/libraries/HTTPClient/src",
@@ -107,8 +107,8 @@
             "browse": {
                 "limitSymbolsToIncludedHeaders": true,
                 "path": [
-                    "D:/wi-charge/Arduino-ESP32/Wi-charge/include",
-                    "D:/wi-charge/Arduino-ESP32/Wi-charge/src",
+                    "d:/wi-charge/Arduino-ESP32/Wi-charge/include",
+                    "d:/wi-charge/Arduino-ESP32/Wi-charge/src",
                     "C:/Users/VernonZhang/.platformio/packages/framework-arduinoespressif32/libraries/Wire/src",
                     "C:/Users/VernonZhang/.platformio/packages/framework-arduinoespressif32/libraries/SD_MMC/src",
                     "C:/Users/VernonZhang/.platformio/packages/framework-arduinoespressif32/libraries/HTTPClient/src",
@@ -205,7 +205,7 @@
                 ]
             },
             "defines": [
-                "PLATFORMIO=50203",
+                "PLATFORMIO=50204",
                 "ARDUINO_ESP32_DEV",
                 "BOARD_HAS_PSRAM",
                 "ESP32",

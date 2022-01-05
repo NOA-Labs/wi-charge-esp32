@@ -40,6 +40,8 @@ void SD_Card::listDir(fs::FS &fs, const char * dirname, uint8_t levels){
         fileList.push_back(String(file.name()));
         file = root.openNextFile();
     }
+
+    root.close();
 }
 
 void SD_Card::createDir(fs::FS &fs, const char * path){
@@ -180,6 +182,20 @@ bool SD_Card::fileClose()
 {
     file.close();
     return true;
+}
+
+size_t SD_Card::fileSize(fs::FS &fs, const char * path)
+{
+    File root = fs.open(path);
+    if(!root){
+        return 0;
+    }
+
+    size_t size = root.size();
+
+    root.close();
+
+    return size;
 }
 
 bool SD_Card::fileWrite(uint8_t *buff, int size)

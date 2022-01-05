@@ -11,24 +11,30 @@ public:
     AzrureStorageBlobs();
     ~AzrureStorageBlobs();
     bool addSdCard();
+    int getSDType(){return sdType;}
     bool addRequestHeaders(const String resType, const String value);
     void setUrl(const String url){azureUrl = url;}
     String getUrl(){return azureUrl;}
-    bool getExistFileList();
+    bool setExitVideoList(const char *video_name);
+    bool getExistVideoList();
     bool getUrlList();
+    int  getNeedDownloadCount(){return UrlList.size();}
     bool checkUrlIsValid(String &url);
     bool splitUrlList(char *pathList);
     bool downloadFile(String& url);
     bool downloadTest(String& url);
     bool download();
     String getFileNameFromUrl(String &url);
-    void deleteOldFile();
+    bool deleteOldFile();
     int  getFileTotalSize(){return fileTotalSize;}
     int  getFileRemainingSize(){return fileRemainingSize;}
 private:
     class SD_Card SD;
+    int sdType;
     int fileTotalSize;
     int fileRemainingSize;
+    int needDownloadFileNumber;
+    int curDownloadFileIndex;
     String azureUrl;
     struct _requestHeaders{
         String Authorization;
@@ -59,8 +65,8 @@ private:
     String header;
 
     std::vector<String> UrlList;
-    std::vector<String> existFileList;
-    std::vector<String> downloadFileList;
+    std::vector<String> existVideoList;
+    std::vector<String> downloadVideoList;
     
     String myAccountName;
     String myAccountSharedKey;

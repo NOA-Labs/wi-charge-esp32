@@ -4,7 +4,7 @@
 #include "esp_vfs_fat.h"
 #include "FS.h"
 #include "SD_MMC.h"
-
+#include "system_cfg.h"
 /*
  * Connect the SD card to the following pins:
  *
@@ -24,7 +24,7 @@ AzrureStorageBlobs::AzrureStorageBlobs()
 {
     RequestHeaders.x_ms_blob_type = "BlockBlob";
     UrlList.clear();
-    existFileList.clear();
+    existVideoList.clear();
 }
 
 AzrureStorageBlobs::~AzrureStorageBlobs()
@@ -35,32 +35,36 @@ AzrureStorageBlobs::~AzrureStorageBlobs()
 bool AzrureStorageBlobs::addSdCard()
 {
     if(!SD_MMC.begin()){
-        Serial.println("Card Mount Failed");
+        DBG_PRINT.println("Card Mount Failed");
+        sdType = CARD_UNKNOWN;
         return false;
     }
+    
     uint8_t cardType = SD_MMC.cardType();
 
     if(cardType == CARD_NONE){
-        Serial.println("No SD_MMC card attached");
+        DBG_PRINT.println("No SD_MMC card attached");
+        sdType = CARD_UNKNOWN;
         return false;
     }
-
-    Serial.print("SD_MMC Card Type: ");
+    
+    sdType = cardType;
+    DBG_PRINT.print("SD_MMC Card Type: ");
     if(cardType == CARD_MMC){
-        Serial.println("MMC");
+        DBG_PRINT.println("MMC");
     } else if(cardType == CARD_SD){
-        Serial.println("SDSC");
+        DBG_PRINT.println("SDSC");
     } else if(cardType == CARD_SDHC){
-        Serial.println("SDHC");
+        DBG_PRINT.println("SDHC");
     } else {
-        Serial.println("UNKNOWN");
+        DBG_PRINT.println("UNKNOWN");
     }
 
     uint64_t cardSize = SD_MMC.cardSize() / (1024 * 1024);
-    Serial.printf("SD_MMC Card Size: %lluMB\n", cardSize);
+    DBG_PRINT.printf("SD_MMC Card Size: %lluMB\n", cardSize);
 
-    Serial.printf("Total space: %lluMB\n", SD_MMC.totalBytes() / (1024 * 1024));
-    Serial.printf("Used space: %lluMB\n", SD_MMC.usedBytes() / (1024 * 1024));
+    DBG_PRINT.printf("Total space: %lluMB\n", SD_MMC.totalBytes() / (1024 * 1024));
+    DBG_PRINT.printf("Used space: %lluMB\n", SD_MMC.usedBytes() / (1024 * 1024));
     return true;
 }
 /**
@@ -107,17 +111,17 @@ bool AzrureStorageBlobs::addRequestHeaders(const String resType, const String va
 bool AzrureStorageBlobs::splitUrlList(char *pathList)
 {
     String fileType = String(".avi");
-    String protocol  = String("https");
+    String protocol  = String("http");
+    DBG_PRINT.println("\nenter < splitUrlList >");
 
     if(strstr(pathList, ".bin") != NULL){//检测到bin升级文件。
 
         return true;
     }
 
-    // Serial.printf("\nPath List:\n %s\n", pathList);
-
-    String strPathList = String(pathList);
+    String strPathList = String((const char *)pathList);
     int pos = strPathList.indexOf(fileType);
+    DBG_PRINT.printf("url list is:\n%s\n", strPathList.c_str());
     while(pos != -1){
         String getPath = strPathList.substring(0, pos + fileType.length());
         int newPos = getPath.indexOf(protocol);
@@ -128,24 +132,57 @@ bool AzrureStorageBlobs::splitUrlList(char *pathList)
     }
 
     for(int i = 0; i < UrlList.size(); i++){
-        Serial.printf("Video %d url is: %s.\n", i, UrlList.at(i).c_str());
+        DBG_PRINT.printf("Video %d url is: %s.\n", i, UrlList.at(i).c_str());
     }
     
+    DBG_PRINT.println("exit < splitUrlList >");
     return true;
 }
-bool AzrureStorageBlobs::getExistFileList()
+
+bool AzrureStorageBlobs::setExitVideoList(const char *video_name)
 {
-    Serial.println("get exist file list.");
+    String path = String(video_name);
+    int index = path.lastIndexOf('/');
+    String name = path.substring(index + 1);
+    DBG_PRINT.printf("rev file is : %s.\r\n", name.c_str());
+    existVideoList.push_back(name);
+    return true;
+}
+/**
+ * @brief 
+ * 
+ * @return true 
+ * @return false 
+ * @note   save video name format: xxx.avi,ex: 800x480.avi
+ */
+bool AzrureStorageBlobs::getExistVideoList()
+{
+    DBG_PRINT.println("enter < getExistVideoList >");
+    DBG_PRINT.println("get exist file list.");
     bool sdcard_sta = addSdCard();
     if(!sdcard_sta)return false;
 
     SD.listDir(SD_MMC, "/Videos", 0);
 
-    existFileList = SD.getFileList();
-    for(int i = 0; i < existFileList.size(); i++){
-        Serial.printf("File %d is %s.\n", i, existFileList.at(i).c_str());
+    existVideoList.clear();
+    std::vector<String> fileList = SD.getFileList();
+
+    for(int i = 0; i < fileList.size(); i++){
+        int size  = SD.fileSize(SD_MMC, fileList.at(i).c_str());
+        int index = fileList.at(i).lastIndexOf('/');
+        String  getFileName = fileList.at(i).substring(index + 1);
+        if(size > 0){
+            existVideoList.push_back(getFileName);
+        }
+
+        DBG_PRINT.printf("File %d is %s, Size %d\n", i, getFileName.c_str(), size);
+    }
+    DBG_PRINT.println("Valid Video list:");
+    for(int i = 0; i < existVideoList.size(); i++){
+        DBG_PRINT.println(existVideoList.at(i));
     }
 
+    DBG_PRINT.println("exit < getExistVideoList >");
     return true;
 }
 /**
@@ -158,30 +195,30 @@ bool AzrureStorageBlobs::getUrlList()
     bool status = true;
     HTTPClient http;
     char buff[256] = {0};
-
-    Serial.println("get url list from azure.");
+    DBG_PRINT.println("enter < getUrlList >");
+    DBG_PRINT.println("get url list from azure.");
 
     if(azureUrl.isEmpty())return false;
-    Serial.printf("video list file path: %s\n", azureUrl.c_str());
+    DBG_PRINT.printf("video list file path: %s\n", azureUrl.c_str());
 
-    downloadFileList.clear();
+    downloadVideoList.clear();
     UrlList.clear();
 
     http.begin(azureUrl);
     int httpCode = http.GET();
     if(httpCode > 0){
-        Serial.printf("[Http]GET Code: %d\n", httpCode);
+        DBG_PRINT.printf("[Http]GET Code: %d\n", httpCode);
 
         if(httpCode == HTTP_CODE_OK){
             int len = http.getSize();
-            Serial.printf("the file size is: %d\n", len);
+            DBG_PRINT.printf("the file size is: %d\n", len);
 
             WiFiClient *stream = http.getStreamPtr();
             while(http.connected() && (len > 0 || len == -1)){
                 size_t size = stream->available();
                 if(size){
                     int c = stream->readBytes(buff, ((size > sizeof(buff)) ? sizeof(buff) : size));
-                    Serial.write(buff, c);
+                    DBG_PRINT.write(buff, c);
                     if(len > 0){
                         len -= c;
                     }
@@ -193,92 +230,124 @@ bool AzrureStorageBlobs::getUrlList()
         }
     }
     else{
-        Serial.printf("[Http] Get failed, error: %s\n", http.errorToString(httpCode).c_str());
+        DBG_PRINT.printf("[Http] Get failed, error: %s\n", http.errorToString(httpCode).c_str());
         status = false;
     }
 
     http.end();
-    Serial.println("video list download ok.\r\n");
-
+    DBG_PRINT.println("video list download ok.\r\n");
+    DBG_PRINT.println("exit < getUrlList >");
     return status ;
 }
 
 bool  AzrureStorageBlobs::checkUrlIsValid(String &url)
 {
     String fileName = getFileNameFromUrl(url);
-    Serial.println();
-    Serial.printf("file name is: %s\n", fileName.c_str());
-
+    DBG_PRINT.println();
+    DBG_PRINT.println("enter < checkUrlIsValid >");
+    DBG_PRINT.printf("url is: < %s >\nfile name is: < %s >\n", url.c_str(), fileName.c_str());
+    bool sta = true;
     int i = 0;
-    while(i < existFileList.size()){
-        if(existFileList.at(i++) == fileName){
-            downloadFileList.push_back(fileName);
-            Serial.printf("current file:( %s ) is exist,didn't need to download.\r\n", fileName.c_str());
-            return false;       
+    while(i < existVideoList.size()){
+        if(existVideoList.at(i++) == fileName){//网络上的视频和本地视频一样，直接将该视频放到已下载列表中。
+            downloadVideoList.push_back(fileName);
+            DBG_PRINT.printf("current file:( %s ) is exist,didn't need to download.\r\n", fileName.c_str());
+            sta = false;       
+            break;
         }
     }
-    Serial.printf("input < %s >  URL( %s ) to download list.\r\n", fileName.c_str(), url.c_str());
-    UrlList.push_back(url);
-    return true;
+    if(sta){
+        DBG_PRINT.printf("input < %s >  URL( %s ) to download list.\r\n", fileName.c_str(), url.c_str());
+        UrlList.push_back(url);
+    }
+    DBG_PRINT.println("exit < checkUrlIsValid >");
+
+    return sta;
 }
 
-uint8_t download_buff[32*1024] = {0};
+uint8_t download_buff[32768] = {0};
 bool AzrureStorageBlobs::downloadFile(String& url)
 {
     HTTPClient http;
     bool status = true;
-
+    DBG_PRINT.println("enter < downloadFile >");
     String filePath = String("/Videos/") + getFileNameFromUrl(url);
-    Serial.print("save file to : ");
-    Serial.println(filePath);
+    DBG_PRINT.print("save file to : ");
+    DBG_PRINT.println(filePath);
     SD.fileOpen(SD_MMC, filePath.c_str());
     delay(500);
     http.begin(url);
-    Serial.printf("http download video url is :%s\r\n", url.c_str());
+    DBG_PRINT.printf("http download video url is :%s\r\n", url.c_str());
     int httpCode = http.GET();
+    String fileName = getFileNameFromUrl(url);
+
     if(httpCode > 0){
-        Serial.printf("[Http]GET Code: %d\n", httpCode);
+        DBG_PRINT.printf("[Http]GET Code: %d\n", httpCode);
 
         if(httpCode == HTTP_CODE_OK){
             int len = http.getSize();
-            int total_size = 0;
             int download_count = 0;
+            int download_size = 0;
+            int start_ms = 0;
+            int cur_ms = 0;
+            int total_ms = 0;
+            int bkp_total_ms = 0;
+            int downloadPersent = 0;
+
             fileTotalSize = len;
-            Serial.printf("the file size is: %d\n", len);
-        
+            DBG_PRINT.printf("the file size is: %d\n", len);
+
             WiFiClient *stream = http.getStreamPtr();
+            
+            start_ms = xTaskGetTickCount();
+            
             while(http.connected() && (len > 0 || len == -1)){
                 size_t size = stream->available();
                 if(size){
                     int c = stream->readBytes(download_buff, ((size > sizeof(download_buff)) ? sizeof(download_buff) : size));
+                    cur_ms = xTaskGetTickCount();
+                    total_ms = cur_ms - start_ms;
+                    total_ms /= 1000;
+                    if(total_ms > bkp_total_ms){
+                        bkp_total_ms = total_ms;
+                        downloadPersent = download_size * 100 / fileTotalSize;
+                        DBG_PRINT.printf("%d s, %d bytes per sec.\r\n", total_ms, download_size / total_ms);
+                        DBG_PRINT.printf("(%d/%d)\n%s\n%d %%\n",curDownloadFileIndex, needDownloadFileNumber, fileName.c_str(), downloadPersent);
+                        Serial2.printf("(%d/%d)\n%s\n%d %%\n\r\n",curDownloadFileIndex, needDownloadFileNumber, fileName.c_str(), downloadPersent);
+                    }
                     //write receive data to sd card.
-                    // SD.fileWrite(download_buff, c);
+                    SD.fileWrite(download_buff, c);
+                    
                     if(len > 0){
                         len -= c;
-                        total_size += c;
+                        download_size += c;
                         download_count ++;
                         fileRemainingSize = len;
                     }
                 }
             }
-            Serial.printf("get size is %d. download count is %d.\r\n", total_size, download_count);
-        }else{
+            DBG_PRINT.printf("file size is %d. download count is %d.\r\n", download_size, download_count);
+        }else{//download failed. delete new create file.
+            DBG_PRINT.printf("download failed.\r\n");
+            Serial2.printf("download failed.\r\n");
+            SD.deleteFile(SD_MMC, filePath.c_str());
             status = false;
         }
     }
     else{
-        Serial.printf("[Http] Get failed, error: %s\n", http.errorToString(httpCode).c_str());
+        DBG_PRINT.printf("[Http] Get failed, error: %s\n", http.errorToString(httpCode).c_str());
         status = false;
     }
     SD.fileClose();
     http.end();
     if(!status){
-        Serial.printf("Http Get failed\r\n");
+        DBG_PRINT.printf("Http Get failed\r\n");
     }
     else{
-        Serial.printf("download video succcess, save to sd card.\r\n");
+        downloadVideoList.push_back(fileName);
+        DBG_PRINT.printf("download video succcess, save to sd card.\r\n");
     }
-    
+    DBG_PRINT.println("exit < downloadFile >");
     return status ;
 }
 /**
@@ -294,28 +363,39 @@ bool AzrureStorageBlobs::downloadTest(String& url)
     bool status = true;
 
     http.begin(url);
-    Serial.printf("http download video url is :%s\r\n", url.c_str());
+    DBG_PRINT.printf("http download video url is :%s\r\n", url.c_str());
      int httpCode = http.GET();
     if(httpCode > 0){
-        Serial.printf("[Http]GET Code: %d\n", httpCode);
+        DBG_PRINT.printf("[Http]GET Code: %d\n", httpCode);
 
         if(httpCode == HTTP_CODE_OK){
             int len = http.getSize();
-            int total_size = 0;
+            int download_size = 0;
             int download_count = 0;
+            int start_ms = 0;
+            int cur_ms = 0;
+            int total_ms = 0;
+            int bkp_total_ms = 0;
             fileTotalSize = len;
-            Serial.printf("the file size is: %d\n", len);
+            DBG_PRINT.printf("the file size is: %d\n", len);
         
             WiFiClient *stream = http.getStreamPtr();
+            start_ms = xTaskGetTickCount();
             while(http.connected() && (len > 0 || len == -1)){
                 size_t size = stream->available();
                 if(size){
                     int c = stream->readBytes(download_buff, ((size > sizeof(download_buff)) ? sizeof(download_buff) : size));
                     //write receive data to sd card.
-                    Serial.printf("download count %d. bytes %d.\r\n",download_count, c);
+                    cur_ms = xTaskGetTickCount();
+                    total_ms = cur_ms - start_ms;
+                    total_ms /= 1000;
+                    if(total_ms > bkp_total_ms){
+                        bkp_total_ms = total_ms;
+                        DBG_PRINT.printf("%d s, %d bytes per sec.\r\n", total_ms, download_size / total_ms);
+                    }
                     if(len > 0){
                         len -= c;
-                        total_size += c;
+                        download_size += c;
                         download_count ++;
                         fileRemainingSize = len;
                     }
@@ -326,16 +406,16 @@ bool AzrureStorageBlobs::downloadTest(String& url)
         }
     }
     else{
-        Serial.printf("[Http] Get failed, error: %s\n", http.errorToString(httpCode).c_str());
+        DBG_PRINT.printf("[Http] Get failed, error: %s\n", http.errorToString(httpCode).c_str());
         status = false;
     }
     SD.fileClose();
     http.end();
     if(!status){
-        Serial.printf("download failed.\r\n");
+        DBG_PRINT.printf("download failed.\r\n");
     }
     else{
-        Serial.printf("download success.\r\n");
+        DBG_PRINT.printf("download success.\r\n");
     }
     
     return status ;
@@ -343,16 +423,24 @@ bool AzrureStorageBlobs::downloadTest(String& url)
 
 bool AzrureStorageBlobs::download()
 {
-    if(UrlList.empty())return false;
-    Serial.printf("need download file number: %d\n", UrlList.size());
-    
+    if(UrlList.empty()){
+        return false;
+    }
+    DBG_PRINT.printf("need download file number: %d\n", UrlList.size());
+    needDownloadFileNumber = UrlList.size();
     for(int i = 0; i < UrlList.size(); i++){
-        Serial.printf("start download video: %s\n.", UrlList.at(i).c_str());
+        DBG_PRINT.printf("start download video: %s\n.", UrlList.at(i).c_str());
+        curDownloadFileIndex = i + 1;
         downloadFile(UrlList.at(i));
     }
     return true;
 }
-
+/**
+ * @brief 
+ * 
+ * @param url 
+ * @return String  ex : return  800x480.avi
+ */
 String AzrureStorageBlobs::getFileNameFromUrl(String &url)
 {
     // String filename = url.find_last_of('/');
@@ -360,19 +448,33 @@ String AzrureStorageBlobs::getFileNameFromUrl(String &url)
     return url.substring(index + 1);// remove '/'.
 }
 
-void AzrureStorageBlobs::deleteOldFile()
+bool AzrureStorageBlobs::deleteOldFile()
 {
     int i, j, errCount;
-    for(i = 0; i < existFileList.size(); i++){
+    int downloadFileSize = downloadVideoList.size();
+    int existFileSize    = existVideoList.size();
+    DBG_PRINT.println("enter < deleteOldFile >");
+
+    if(downloadFileSize == 0 || existFileSize == 0){
+        goto exit_delete_old_file;
+    }
+
+    for(i = 0; i < existFileSize; i++){
         errCount = 0;
-        for(j = 0; j < downloadFileList.size(); j++){
-            if(existFileList.at(i) != downloadFileList.at(j)){
+        for(j = 0; j < downloadFileSize; j++){
+            if(existVideoList.at(i) != downloadVideoList.at(j)){
                 errCount++;
             }
         }
-        if(errCount == j){//need delete existFileList.at(i);
-            String filePath = String("/Videos/") + downloadFileList.at(j);
+        String filePath = String("/Videos/" + existVideoList.at(i));
+        DBG_PRINT.println(filePath);
+        if(errCount == j && errCount != 0){//need delete existVideoList.at(i);
+            DBG_PRINT.printf("delete file is %s.\n", existVideoList.at(i).c_str());
             SD.deleteFile(SD_MMC, filePath.c_str());
         }
     }
+
+exit_delete_old_file:
+    DBG_PRINT.println("exit < deleteOldFile >");
+    return true;
 }

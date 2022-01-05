@@ -23,6 +23,7 @@ void deleteFile(fs::FS &fs, const char * path);
 void testFileIO(fs::FS &fs, const char * path);
 bool fileOpen(fs::FS &fs, const char * path);
 bool fileClose();
+size_t fileSize(fs::FS &fs, const char * path);
 bool fileWrite(uint8_t *buff, int size);
 private:
     std::vector<String> fileList;

@@ -4,7 +4,7 @@ static AzrureStorageBlobs   sd_test;
 
 void periph_sd_test(void)
 {
-    sd_test.getExistFileList();
+    sd_test.getExistVideoList();
 }
 
 /**
