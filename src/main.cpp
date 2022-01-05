@@ -156,8 +156,10 @@ static int esp32_connect_ap( char *pcWriteBuffer, size_t xWriteBufferLen, const 
 
     strncpy(pcWriteBuffer, pcCommandString, xWriteBufferLen);
 
-    if(esp32_conn_p.connect_sta == WL_CONNECTED)return pdFALSE;
-
+    if(esp32_conn_p.connect_sta == WL_CONNECTED){
+        Serial2.println("Connect");
+        return pdFALSE;
+    }
     const char *p = FreeRTOS_CLIGetParameter(pcCommandString, 1, &pxParameterStringLength);
     if(p == NULL){
         return pdFALSE;
