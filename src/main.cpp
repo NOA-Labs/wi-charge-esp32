@@ -68,7 +68,7 @@ void setup() {
 }
 
 void loop() {
-   
+   delay(portMAX_DELAY);
 }
 /**
  * ----------------------------------------------------------------------------------------------
@@ -598,6 +598,10 @@ static void wifi_download_task_entry(void *param)
 
     while(1){
         vTaskSuspend( NULL );
+        sta = AzureStorageBlobs_p.getExistVideoList();
+        if(!sta){
+            goto wifi_download_end;
+        }
         sta = AzureStorageBlobs_p.getUrlList();
         if(!sta){
             goto wifi_download_end;

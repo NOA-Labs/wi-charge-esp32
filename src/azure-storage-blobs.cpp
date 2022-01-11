@@ -65,6 +65,7 @@ bool AzrureStorageBlobs::addSdCard()
 
     DBG_PRINT.printf("Total space: %lluMB\n", SD_MMC.totalBytes() / (1024 * 1024));
     DBG_PRINT.printf("Used space: %lluMB\n", SD_MMC.usedBytes() / (1024 * 1024));
+
     return true;
 }
 /**
