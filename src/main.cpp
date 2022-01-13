@@ -14,6 +14,7 @@
 #include "azure-storage-blobs.h"
 #include "system_cfg.h"
 #include "sd_driver.h"
+#include "SD_Update.h"
 
 TaskHandle_t  task_connect_ap_handle_t = NULL;
 TaskHandle_t  task_download_handle_t = NULL;
@@ -50,6 +51,7 @@ void setup() {
     DBG_PRINT.begin(115200);
     Serial2.begin(115200);
     delay(200);
+    SD_update_handle();
     DBG_PRINT.println();
     DBG_PRINT.println("system start.\r\n");
     DBG_PRINT.printf("flash size: %d\n", ESP.getFlashChipSize());
